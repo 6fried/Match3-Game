@@ -23,6 +23,38 @@ public class Tile : MonoBehaviour
     [Tooltip("The piece actually on the tile")]
     public Piece piece;
 
+    private void Start()
+    {
+        SaveNeighbourTiles();
+    }
+    private void SaveNeighbourTiles()
+    {
+        float step = GameManager.instance.board.step;
+        Vector2 p = transform.position/step;
+
+        if (GameObject.Find($"[{p.x},{p.y + 1}]") != null)
+        {
+            upperTile = GameObject.Find($"[{p.x},{p.y + 1}]").GetComponent<Tile>();
+        }
+
+        if (GameObject.Find($"[{p.x},{p.y - 1}]") != null)
+        {
+            lowerTile = GameObject.Find($"[{p.x},{p.y - 1}]").GetComponent<Tile>();
+        }
+
+        if (GameObject.Find($"[{p.x - 1},{p.y}]") != null)
+        {
+            leftTile = GameObject.Find($"[{p.x - 1},{p.y}]").GetComponent<Tile>();
+        }
+
+        if (GameObject.Find($"[{p.x + 1},{p.y}]") != null)
+        {
+            rightTile = GameObject.Find($"[{p.x + 1},{p.y}]").GetComponent<Tile>();
+        }
+    }
+
+
+
     /// <summary>
     /// Description:
     /// Instanciate a new Piece on the tile;
@@ -50,13 +82,12 @@ public class Tile : MonoBehaviour
         selected = true;
     }
 
-    private void OnMouseDrag()
+    private async void OnMouseDrag()
     {
         if (selected)
         {
             float step = GameManager.instance.board.step;
             Vector3 dragDirection = GetDragDirection();
-            Debug.Log(dragDirection);
             if(Mathf.Abs(dragDirection.x) != Mathf.Abs(dragDirection.y))
             {
                 Vector3 targetTileCoordinates = (transform.position + step * dragDirection)/step;
@@ -64,7 +95,7 @@ public class Tile : MonoBehaviour
                 if (targetTileObject != null)
                 {
                     Tile targetTile = targetTileObject.GetComponent<Tile>();
-                    GameManager.instance.board.Swap(this, targetTile);
+                    await GameManager.instance.board.Swap(this, targetTile);
                     StartCoroutine("StopDragProcess");
                 }
             }
@@ -102,4 +133,93 @@ public class Tile : MonoBehaviour
         yield return new WaitForEndOfFrame();
         selected = false;
     }
+
+    public void GetMatchs()
+    {
+        BoardManager board = GameManager.instance.board;
+
+        if (HasHorizontalMatch())
+        {
+            if (!board.markedTiles.Contains(this))
+            {
+                board.markedTiles.Add(this);
+            }
+
+            if (!board.markedTiles.Contains(leftTile))
+            {
+                board.markedTiles.Add(leftTile);
+            }
+
+            if (!board.markedTiles.Contains(rightTile))
+            {
+                board.markedTiles.Add(rightTile);
+            }
+        }
+
+        if (HasVerticalMatch())
+        {
+            if (!board.markedTiles.Contains(this))
+            {
+                board.markedTiles.Add(this);
+            }
+
+            if (!board.markedTiles.Contains(upperTile))
+            {
+                board.markedTiles.Add(upperTile);
+            }
+
+            if (!board.markedTiles.Contains(lowerTile))
+            {
+                board.markedTiles.Add(lowerTile);
+            }
+        }
+
+    }
+
+    private bool HasHorizontalMatch()
+    {
+        if (leftTile != null && rightTile != null)
+        {
+            return (piece.IsEqualto(leftTile.piece) && piece.IsEqualto(rightTile.piece));
+        }
+
+        return false;
+    }
+
+    private bool HasVerticalMatch()
+    {
+        if (upperTile != null && lowerTile != null)
+        {
+            return (piece.IsEqualto(upperTile.piece) && piece.IsEqualto(lowerTile.piece));
+        }
+
+        return false;
+    }
+
+    public void Explode()
+    {
+        GameObject.Destroy(piece.gameObject);
+        piece = null;
+    }
+
+    public bool HasMatchFor(Piece cmpPiece)
+    {
+        bool hasHorizontalMatch = false;
+        bool hasVerticalMatch = false;
+
+        if (leftTile != null && rightTile != null)
+        {
+            hasHorizontalMatch = leftTile.piece.IsEqualto(cmpPiece) && rightTile.piece.IsEqualto(cmpPiece);
+        }
+
+        if (upperTile != null && lowerTile != null)
+        {
+            hasVerticalMatch = upperTile.piece.IsEqualto(cmpPiece) && lowerTile.piece.IsEqualto(cmpPiece);
+        }
+
+        return (hasHorizontalMatch || hasVerticalMatch);
+    }
+
+
+
 }

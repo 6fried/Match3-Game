@@ -56,7 +56,4 @@ public class GameManager : MonoBehaviour
     {
         board.InitGame();
     }
-
-
-
 }

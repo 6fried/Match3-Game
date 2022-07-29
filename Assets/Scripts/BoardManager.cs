@@ -79,7 +79,6 @@ public class BoardManager : MonoBehaviour
         sequence.Join(tile1Piece.transform.DOMove(tile2.transform.position, tweenDuration))
             .Join(tile2Piece.transform.DOMove(tile1.transform.position, tweenDuration));
 
-        await sequence.Play().AsyncWaitForCompletion();
 
         tile1Piece.transform.SetParent(tile2.transform);
         tile2Piece.transform.SetParent(tile1.transform);
@@ -87,8 +86,10 @@ public class BoardManager : MonoBehaviour
         tile1.piece = tile2Piece;
         tile2.piece = tile1Piece;
 
+        await sequence.Play().AsyncWaitForCompletion();
+
         // Check if there are matching tiles
-        //CheckForMatchingTiles();
+        CheckForMatchingTiles();
     }
 
     public void CheckForMatchingTiles()
@@ -114,8 +115,9 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    private void RefillBoard()
+    private async void RefillBoard()
     {
+        Sequence refillSequence = DOTween.Sequence();
         for (int y = 0; y < height; y++) // Raws
         {
             for (int x = 0; x < width; x++) // Columns
@@ -136,13 +138,15 @@ public class BoardManager : MonoBehaviour
                         if (cursTile.upperTile == null)
                         {
                             cursTile.CreatePiece(piecePrefabs[Random.Range(0, piecePrefabs.Count)]);
-                            cursTile.piece.GoToTile(currentTile);
+                            refillSequence.Join(cursTile.piece.MoveToTile(currentTile));
+                            //await cursTile.piece.MoveToTile(currentTile); // TODO: Tweening
                             cursTile.piece = null;
                         }
                         else
                         {
                             cursTile = cursTile.upperTile;
-                            cursTile.piece.GoToTile(currentTile);
+                            refillSequence.Join(cursTile.piece.MoveToTile(currentTile));
+                            //await cursTile.piece.MoveToTile(currentTile); // TODO: Tweening
                             cursTile.piece = null;
                         }
                     }
@@ -153,11 +157,8 @@ public class BoardManager : MonoBehaviour
                 }
             }
         }
+        await refillSequence.Play().AsyncWaitForCompletion();
         CheckForMatchingTiles();
     }
-
-
-
-
 
 }
