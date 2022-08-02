@@ -1,7 +1,8 @@
-using System.Collections;
+using System;
+using System.Linq;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Threading.Tasks;
+using UnityEngine;
 using DG.Tweening;
 
 public class BoardManager : MonoBehaviour
@@ -48,11 +49,7 @@ public class BoardManager : MonoBehaviour
 
                 //Tile Content
                 GameObject tilePiece;
-                //do
-                //{
-                    tilePiece = piecePrefabs[Random.Range(0, piecePrefabs.Count)];
-                //}
-                //while ((tile.lowerTile != null && tile.lowerTile.HasMatchFor(tilePiece.GetComponent<Piece>())) || (tile.leftTile != null && tile.leftTile.HasMatchFor(tilePiece.GetComponent<Piece>())));
+                tilePiece = piecePrefabs[UnityEngine.Random.Range(0, piecePrefabs.Count)];
 
                 tile.CreatePiece(tilePiece);
 
@@ -88,8 +85,29 @@ public class BoardManager : MonoBehaviour
 
         await sequence.Play().AsyncWaitForCompletion();
 
-        // Check if there are matching tiles
+        // Check if the move creates match
         CheckForMatchingTiles();
+
+        if (markedTiles.Count <= 0)
+        {
+            Sequence _sequence = DOTween.Sequence();
+
+            _sequence.Join(tile1Piece.transform.DOMove(tile2Piece.transform.position, tweenDuration))
+                .Join(tile2Piece.transform.DOMove(tile1Piece.transform.position, tweenDuration));
+
+            tile1Piece.transform.SetParent(tile1.transform);
+            tile2Piece.transform.SetParent(tile2.transform);
+
+            tile1.piece = tile1Piece;
+            tile2.piece = tile2Piece;
+
+            await _sequence.Play().AsyncWaitForCompletion();
+        }
+        else
+        {
+            // Explode matching tiles
+            ClearMatchingTiles();
+        }
     }
 
     public void CheckForMatchingTiles()
@@ -102,7 +120,10 @@ public class BoardManager : MonoBehaviour
                 currentTile.GetMatchs();
             }
         }
+    }
 
+    public void ClearMatchingTiles()
+    {
         if (markedTiles.Count > 0)
         {
             foreach (Tile tile in markedTiles)
@@ -137,28 +158,88 @@ public class BoardManager : MonoBehaviour
 
                         if (cursTile.upperTile == null)
                         {
-                            cursTile.CreatePiece(piecePrefabs[Random.Range(0, piecePrefabs.Count)]);
+                            cursTile.CreatePiece(piecePrefabs[UnityEngine.Random.Range(0, piecePrefabs.Count)]);
                             refillSequence.Join(cursTile.piece.MoveToTile(currentTile));
-                            //await cursTile.piece.MoveToTile(currentTile); // TODO: Tweening
                             cursTile.piece = null;
                         }
                         else
                         {
                             cursTile = cursTile.upperTile;
                             refillSequence.Join(cursTile.piece.MoveToTile(currentTile));
-                            //await cursTile.piece.MoveToTile(currentTile); // TODO: Tweening
                             cursTile.piece = null;
                         }
                     }
                     else
                     {
-                        currentTile.CreatePiece(piecePrefabs[Random.Range(0, piecePrefabs.Count)]);
+                        currentTile.CreatePiece(piecePrefabs[UnityEngine.Random.Range(0, piecePrefabs.Count)]);
                     }
                 }
             }
         }
         await refillSequence.Play().AsyncWaitForCompletion();
+
         CheckForMatchingTiles();
+
+        if (markedTiles.Count > 0)
+        {
+            ClearMatchingTiles();
+        }
+        else if (!MatchIsPossible())
+        {
+            Debug.Log("Shuffle");
+            Shuffle();
+        }
+
+
     }
 
+    private bool MatchIsPossible()
+    {
+        for (int y = 0; y < height; y++) // Raws
+        {
+            for (int x = 0; x < width; x++) // Columns
+            {
+                Tile currentTile = GameObject.Find($"[{x},{y}]").GetComponent<Tile>();
+                if (currentTile.MayHaveHorizontalMatch() || currentTile.MayHaveVerticalMatch())
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void Shuffle() // TODO: Start Over
+    {
+        System.Random rand = new System.Random();
+
+        List<Piece> piecesOnBoard = new List<Piece>();
+        List<Tile> tilesOnBoard = new List<Tile>();
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                Tile currentTile = GameObject.Find($"[{x},{y}]").GetComponent<Tile>();
+                piecesOnBoard.Add(currentTile.piece);
+                currentTile.piece = null;
+                tilesOnBoard.Add(currentTile);
+            }
+        }
+
+
+        List<Piece> shuffled = piecesOnBoard.OrderBy(_ => rand.Next()).ToList();
+        Debug.Log(piecesOnBoard);
+        Debug.Log(shuffled);
+        Sequence sequence = DOTween.Sequence();
+
+        for (int i = 0; i < shuffled.Count; i++)
+        {
+            sequence.Join(shuffled[i].transform.DOScale(Vector2.zero, tweenDuration));
+            //Tile tile = tilesOnBoard[i];
+            //Piece piece = shuffled[i];
+            //piece.MoveToTile(tile);
+        }
+    }
 }

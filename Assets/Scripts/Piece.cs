@@ -63,13 +63,11 @@ public class Piece : MonoBehaviour
     {
         GoToTile(target);
 
-        Sequence sequence = DOTween.Sequence();
-
         transform.SetParent(target.transform);
 
         target.piece = this;
 
-        return sequence.Join(transform.DOMove(target.transform.position, tweenDuration));
+        return transform.DOMove(target.transform.position, tweenDuration).SetAutoKill(true);
     }
 
     public bool IsEqualto(Piece piece)

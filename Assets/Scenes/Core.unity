@@ -301,7 +301,7 @@ MonoBehaviour:
   - {fileID: 3981143757363956688, guid: 180a5734c24605841bcb72968276a37f, type: 3}
   - {fileID: 6328117828483127909, guid: 7b7789eb9b1e0f14f8b329ece3892a17, type: 3}
   - {fileID: 5997115671656984556, guid: d744ec88989df994fa6e955fe292e3c8, type: 3}
-  width: 10
-  height: 10
+  width: 4
+  height: 4
   step: 1.2
   markedTiles: []

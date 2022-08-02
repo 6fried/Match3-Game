@@ -1,13 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class Tile : MonoBehaviour
 {
     [Header("Tile Settings")]
-
-    [Tooltip("Weither if the tile is selected or not")]
-    public bool selected;
 
     [Header("Tile Neighbours")]
     [Tooltip("The upper Tile")]
@@ -23,37 +21,78 @@ public class Tile : MonoBehaviour
     [Tooltip("The piece actually on the tile")]
     public Piece piece;
 
+    // Corner Tiles
+    private Tile upperLeftTile, upperRightTile, lowerLeftTile, lowerRightTile;
+
+
+    // Neighbour valid tiles
+    private List<Tile> neighbourTiles = new List<Tile>();
+
+    // Weither if the tile is selected or not"
+    private static Tile selected;
+
     private void Start()
     {
         SaveNeighbourTiles();
     }
+
     private void SaveNeighbourTiles()
     {
         float step = GameManager.instance.board.step;
         Vector2 p = transform.position/step;
 
+        // Top
         if (GameObject.Find($"[{p.x},{p.y + 1}]") != null)
         {
             upperTile = GameObject.Find($"[{p.x},{p.y + 1}]").GetComponent<Tile>();
+            neighbourTiles.Add(upperTile);
         }
 
+        // Bottom
         if (GameObject.Find($"[{p.x},{p.y - 1}]") != null)
         {
             lowerTile = GameObject.Find($"[{p.x},{p.y - 1}]").GetComponent<Tile>();
+            neighbourTiles.Add(lowerTile);
         }
 
+        // Left
         if (GameObject.Find($"[{p.x - 1},{p.y}]") != null)
         {
             leftTile = GameObject.Find($"[{p.x - 1},{p.y}]").GetComponent<Tile>();
+            neighbourTiles.Add(leftTile);
         }
 
+        // Right
         if (GameObject.Find($"[{p.x + 1},{p.y}]") != null)
         {
             rightTile = GameObject.Find($"[{p.x + 1},{p.y}]").GetComponent<Tile>();
+            neighbourTiles.Add(rightTile);
+        }
+
+        // Upper Left
+        if (GameObject.Find($"[{p.x - 1},{p.y + 1}]") != null)
+        {
+            upperLeftTile = GameObject.Find($"[{p.x - 1},{p.y + 1}]").GetComponent<Tile>();
+        }
+
+        // Upper Right
+        if (GameObject.Find($"[{p.x + 1},{p.y + 1}]") != null)
+        {
+            upperRightTile = GameObject.Find($"[{p.x + 1},{p.y + 1}]").GetComponent<Tile>();
+        }
+
+        // Lower Left
+        if (GameObject.Find($"[{p.x - 1},{p.y - 1}]") != null)
+        {
+            lowerLeftTile = GameObject.Find($"[{p.x - 1},{p.y - 1}]").GetComponent<Tile>();
+        }
+
+        // Lower Right
+        if (GameObject.Find($"[{p.x + 1},{p.y - 1}]") != null)
+        {
+            lowerRightTile = GameObject.Find($"[{p.x + 1},{p.y - 1}]").GetComponent<Tile>();
         }
     }
-
-
 
     /// <summary>
     /// Description:
@@ -79,59 +118,31 @@ public class Tile : MonoBehaviour
 
     private void OnMouseDown()
     {
-        selected = true;
+        selected = this;
     }
 
-    private async void OnMouseDrag()
+    private void OnMouseDrag()
     {
-        if (selected)
-        {
-            float step = GameManager.instance.board.step;
-            Vector3 dragDirection = GetDragDirection();
-            if(Mathf.Abs(dragDirection.x) != Mathf.Abs(dragDirection.y))
-            {
-                Vector3 targetTileCoordinates = (transform.position + step * dragDirection)/step;
-                GameObject targetTileObject = GameObject.Find($"[{targetTileCoordinates.x},{targetTileCoordinates.y}]");
-                if (targetTileObject != null)
-                {
-                    Tile targetTile = targetTileObject.GetComponent<Tile>();
-                    await GameManager.instance.board.Swap(this, targetTile);
-                    StartCoroutine("StopDragProcess");
-                }
-            }
-        }
+        // Piece should follow the cursor        
     }
 
-    private Vector3 GetDragDirection()
+    private async void OnMouseEnter()
     {
-        int x, y;
-        float xMove = Mathf.Clamp(Input.GetAxis("Mouse X") * 10, -1, 1);
-        if (xMove > 0)
+        if(selected != null && selected != this && neighbourTiles.Contains(selected))
         {
-            x = Mathf.CeilToInt(xMove);
+            await GameManager.instance.board.Swap(this, selected);
+            StartCoroutine("ResetSelection");
         }
-        else
-        {
-            x = Mathf.FloorToInt(xMove);
-        }
-
-        float yMove = Mathf.Clamp(Input.GetAxis("Mouse Y") * 10, -1, 1);
-        if (yMove > 0)
-        {
-            y = Mathf.CeilToInt(yMove);
-        }
-        else
-        {
-            y = Mathf.FloorToInt(yMove);
-        }
-
-        return new Vector3(x, y, 0);
     }
 
-    private IEnumerator StopDragProcess()
+    private void OnMouseUp()
+    {
+        selected = null;
+    }
+    private IEnumerator ResetSelection()
     {
         yield return new WaitForEndOfFrame();
-        selected = false;
+        selected = null;
     }
 
     public void GetMatchs()
@@ -176,7 +187,7 @@ public class Tile : MonoBehaviour
 
     }
 
-    private bool HasHorizontalMatch()
+    public bool HasHorizontalMatch()
     {
         if (leftTile != null && rightTile != null)
         {
@@ -186,7 +197,7 @@ public class Tile : MonoBehaviour
         return false;
     }
 
-    private bool HasVerticalMatch()
+    public bool HasVerticalMatch()
     {
         if (upperTile != null && lowerTile != null)
         {
@@ -198,7 +209,9 @@ public class Tile : MonoBehaviour
 
     public void Explode()
     {
-        GameObject.Destroy(piece.gameObject);
+
+        //DOTween.Sequence().Join(piece.transform.DOScale(Vector3.zero, .25f).SetAutoKill(true)).Play();
+        Destroy(piece.gameObject);
         piece = null;
     }
 
@@ -220,6 +233,116 @@ public class Tile : MonoBehaviour
         return (hasHorizontalMatch || hasVerticalMatch);
     }
 
+    public bool MayHaveVerticalMatch()
+    {
+        bool a = false, b = false, c = false, d = false, e = false, f = false, g = false, h = false, i = false, j = false;
 
+        if (upperLeftTile != null && lowerLeftTile != null)
+        {
+            a = piece.IsEqualto(upperLeftTile.piece) && piece.IsEqualto(lowerLeftTile.piece);
+        }
+        if (upperRightTile != null && lowerRightTile != null)
+        {
+            b = piece.IsEqualto(upperRightTile.piece) && piece.IsEqualto(lowerRightTile.piece);
+        }
+        if (upperTile != null && upperTile.upperTile != null && upperTile.upperTile.upperTile != null)
+        {
+            c = piece.IsEqualto(upperTile.upperTile.piece) && piece.IsEqualto(upperTile.upperTile.upperTile.piece);
+        }
+        if (lowerTile != null && lowerTile.lowerTile != null && lowerTile.lowerTile.lowerTile != null)
+        {
+            d = piece.IsEqualto(lowerTile.lowerTile.piece) && piece.IsEqualto(lowerTile.lowerTile.lowerTile.piece);
+        }
+        if (leftTile != null)
+        {
+            if(leftTile.upperTile != null && leftTile.lowerTile != null)
+            {
+                e = piece.IsEqualto(leftTile.upperTile.piece) && piece.IsEqualto(leftTile.lowerTile.piece);
+            }
+
+            if (leftTile.upperTile != null && leftTile.upperTile.upperTile != null)
+            {
+                f = piece.IsEqualto(leftTile.upperTile.piece) && piece.IsEqualto(leftTile.upperTile.upperTile.piece);
+            }
+
+            if (leftTile.lowerTile != null && leftTile.lowerTile.lowerTile != null)
+            {
+                g = piece.IsEqualto(leftTile.lowerTile.piece) && piece.IsEqualto(leftTile.lowerTile.lowerTile.piece);
+            }
+        }
+        if(rightTile != null)
+        {
+            if (rightTile.upperTile != null && rightTile.lowerTile != null)
+            {
+                h = piece.IsEqualto(rightTile.upperTile.piece) && piece.IsEqualto(rightTile.lowerTile.piece);
+            }
+
+            if (rightTile.upperTile != null && rightTile.upperTile.upperTile != null)
+            {
+                i = piece.IsEqualto(rightTile.upperTile.piece) && piece.IsEqualto(rightTile.upperTile.upperTile.piece);
+            }
+
+            if (rightTile.lowerTile != null && rightTile.lowerTile.lowerTile != null)
+            {
+                j = piece.IsEqualto(rightTile.lowerTile.piece) && piece.IsEqualto(rightTile.lowerTile.lowerTile.piece);
+            }
+        }
+
+        return a || b || c || d || e || f || g || h || i || j;
+    }
+
+    public bool MayHaveHorizontalMatch()
+    {
+        bool a = false, b = false, c = false, d = false, e = false, f = false, g = false, h = false, i = false, j = false;
+
+        if (upperLeftTile != null && upperRightTile != null)
+        {
+            a = piece.IsEqualto(upperLeftTile.piece) && piece.IsEqualto(upperRightTile.piece);
+        }
+        if (lowerLeftTile != null && lowerRightTile != null)
+        {
+            b = piece.IsEqualto(lowerLeftTile.piece) && piece.IsEqualto(lowerRightTile.piece);
+        }
+        if (leftTile != null && leftTile.leftTile != null && leftTile.leftTile.leftTile != null)
+        {
+            c = piece.IsEqualto(leftTile.leftTile.piece) && piece.IsEqualto(leftTile.leftTile.leftTile.piece);
+        }
+        if (rightTile != null && rightTile.rightTile != null && rightTile.rightTile.rightTile != null)
+        {
+            d = piece.IsEqualto(rightTile.rightTile.piece) && piece.IsEqualto(rightTile.rightTile.rightTile.piece);
+        }
+        if (upperTile != null)
+        {
+            if (upperTile.leftTile != null && upperTile.rightTile != null)
+            {
+                e = piece.IsEqualto(upperTile.leftTile.piece) && piece.IsEqualto(upperTile.rightTile.piece);
+            }
+            if (upperTile.leftTile != null && upperTile.leftTile.leftTile != null)
+            {
+                f = piece.IsEqualto(upperTile.leftTile.piece) && piece.IsEqualto(upperTile.leftTile.leftTile.piece);
+            }
+            if (upperTile.rightTile != null && upperTile.rightTile.rightTile != null)
+            {
+                g = piece.IsEqualto(upperTile.rightTile.piece) && piece.IsEqualto(upperTile.rightTile.rightTile.piece);
+            }
+        }
+        if (lowerTile != null)
+        {
+            if (lowerTile.leftTile != null && lowerTile.rightTile != null)
+            {
+                h = piece.IsEqualto(lowerTile.leftTile.piece) && piece.IsEqualto(lowerTile.rightTile.piece);
+            }
+            if (lowerTile.leftTile != null && lowerTile.leftTile.leftTile != null)
+            {
+                i = piece.IsEqualto(lowerTile.leftTile.piece) && piece.IsEqualto(lowerTile.leftTile.leftTile.piece);
+            }
+            if (lowerTile.rightTile != null && lowerTile.rightTile.rightTile != null)
+            {
+                j = piece.IsEqualto(lowerTile.rightTile.piece) && piece.IsEqualto(lowerTile.rightTile.rightTile.piece);
+            }
+        }
+
+        return a || b || c || d || e || f || g || h || i || j;
+    }
 
 }
