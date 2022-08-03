@@ -24,7 +24,7 @@ public class BoardManager : MonoBehaviour
     public float step = 1.2f;
 
     [HideInInspector]
-    public List<Tile> markedTiles = new List<Tile>();
+    public List<List<Tile>> markedTiles = new List<List<Tile>>();
 
     // the duration of each tween
     private float tweenDuration = .25f;
@@ -132,7 +132,10 @@ public class BoardManager : MonoBehaviour
             for (int x = 0; x < width; x++) // Columns
             {
                 Tile currentTile = GameObject.Find($"[{x},{y}]").GetComponent<Tile>();
-                currentTile.GetMatchs();
+                if (!currentTile.isMarked)
+                {
+                    currentTile.GetMatchs();
+                }
             }
         }
     }
@@ -141,12 +144,15 @@ public class BoardManager : MonoBehaviour
     {
         if (markedTiles.Count > 0)
         {
-            foreach (Tile tile in markedTiles)
+            foreach (List<Tile> tiles in markedTiles)
             {
-                tile.Explode();
+                foreach(Tile tile in tiles)
+                {
+                    tile.Explode();
+                }
             }
 
-            markedTiles = new List<Tile>();
+            markedTiles = new List<List<Tile>>();
             RefillBoard();
         }
     }

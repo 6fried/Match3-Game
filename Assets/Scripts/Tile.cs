@@ -21,6 +21,10 @@ public class Tile : MonoBehaviour
     [Tooltip("The piece actually on the tile")]
     public Piece piece;
 
+    [Header("Tile Infos")]
+    [Tooltip("Weither if the tile is marked to be clear or not")]
+    public bool isMarked;
+
     // Corner Tiles
     private Tile upperLeftTile, upperRightTile, lowerLeftTile, lowerRightTile;
 
@@ -158,65 +162,74 @@ public class Tile : MonoBehaviour
         selected = null;
     }
 
+    // TODO: Needs Improvement
     public void GetMatchs()
     {
         BoardManager board = GameManager.instance.board;
 
-        if (HasHorizontalMatch())
+        List<Tile> matchingTiles = new List<Tile>();
+        List<Tile> horizontalMatchingTiles = GetHorizontalMatch();
+        List<Tile> verticalMatchingTiles = GetVerticalMatch();
+
+        if (horizontalMatchingTiles.Count >= 3)
         {
-            if (!board.markedTiles.Contains(this))
-            {
-                board.markedTiles.Add(this);
-            }
-
-            if (!board.markedTiles.Contains(leftTile))
-            {
-                board.markedTiles.Add(leftTile);
-            }
-
-            if (!board.markedTiles.Contains(rightTile))
-            {
-                board.markedTiles.Add(rightTile);
-            }
+            matchingTiles.AddRange(horizontalMatchingTiles);
         }
 
-        if (HasVerticalMatch())
+        if (horizontalMatchingTiles.Count >= 3)
         {
-            if (!board.markedTiles.Contains(this))
-            {
-                board.markedTiles.Add(this);
-            }
-
-            if (!board.markedTiles.Contains(upperTile))
-            {
-                board.markedTiles.Add(upperTile);
-            }
-
-            if (!board.markedTiles.Contains(lowerTile))
-            {
-                board.markedTiles.Add(lowerTile);
-            }
+            matchingTiles.AddRange(verticalMatchingTiles);
         }
+
+        board.markedTiles.Add(matchingTiles);
     }
 
-    public bool HasHorizontalMatch()
+    public List<Tile> GetHorizontalMatch()
     {
-        if (leftTile != null && rightTile != null)
+        List<Tile> matchs = new List<Tile>();
+
+        Tile cursTile = leftTile;
+        while (cursTile && cursTile.piece.IsEqualto(piece))
         {
-            return (piece.IsEqualto(leftTile.piece) && piece.IsEqualto(rightTile.piece));
+            Debug.Log("rt");
+            cursTile.isMarked = true;
+            matchs.Add(cursTile);
+            cursTile = cursTile.leftTile;
         }
 
-        return false;
+        cursTile = rightTile;
+        while (cursTile && cursTile.piece.IsEqualto(piece))
+        {
+            Debug.Log("et");
+            cursTile.isMarked = true;
+            matchs.Add(cursTile);
+            cursTile = cursTile.rightTile;
+        }
+
+        return matchs;
     }
 
-    public bool HasVerticalMatch()
+    public List<Tile> GetVerticalMatch()
     {
-        if (upperTile != null && lowerTile != null)
+        List<Tile> matchs = new List<Tile>();
+
+        Tile cursTile = upperTile;
+        while (cursTile && cursTile.piece.IsEqualto(piece))
         {
-            return (piece.IsEqualto(upperTile.piece) && piece.IsEqualto(lowerTile.piece));
+            cursTile.isMarked = true;
+            matchs.Add(cursTile);
+            cursTile = cursTile.upperTile;
         }
 
-        return false;
+        cursTile = lowerTile;
+        while (cursTile && cursTile.piece.IsEqualto(piece))
+        {
+            cursTile.isMarked = true;
+            matchs.Add(cursTile);
+            cursTile = cursTile.lowerTile;
+        }
+
+        return matchs;
     }
 
     public void Explode()

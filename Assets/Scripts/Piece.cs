@@ -4,7 +4,7 @@ using UnityEngine;
 using DG.Tweening;
 using System.Threading.Tasks;
 
-public enum PieceType
+public enum PieceColor
 {
     BLUE,
     GREEN,
@@ -14,43 +14,61 @@ public enum PieceType
     YELLOW,
 }
 
+public enum PieceType
+{
+    NORMAL, 
+    H_BONUS, 
+    V_BONUS, 
+}
+
 public class Piece : MonoBehaviour
 {
+    public PieceColor color;
+
     public PieceType type;
+
+    public Sprite[] sprites = new Sprite[3];
 
     private float tweenDuration = .25f;
 
     private void Start()
     {
+        SetColor();
         SetType();
     }
 
-    private void SetType()
+    public void SetColor()
     {
         if (name.Contains("Blue"))
         {
-            type = PieceType.BLUE;
+            color = PieceColor.BLUE;
         }
         else if (name.Contains("Green"))
         {
-            type = PieceType.GREEN;
+            color = PieceColor.GREEN;
         }
         else if (name.Contains("Orange"))
         {
-            type = PieceType.ORANGE;
+            color = PieceColor.ORANGE;
         }
         else if (name.Contains("Purple"))
         {
-            type = PieceType.PURPLE;
+            color = PieceColor.PURPLE;
         }
         else if (name.Contains("Red"))
         {
-            type = PieceType.RED;
+            color = PieceColor.RED;
         }
         else if (name.Contains("Yellow"))
         {
-            type = PieceType.YELLOW;
+            color = PieceColor.YELLOW;
         }
+    }
+
+    public void SetType(PieceType _type = PieceType.NORMAL)
+    {
+        type = _type;
+        GetComponent<SpriteRenderer>().sprite = sprites[(int) type]; // Each type is numbered begining from 0
     }
 
     public Tween GoToTile(Tile target)
@@ -69,6 +87,6 @@ public class Piece : MonoBehaviour
 
     public bool IsEqualto(Piece piece)
     {
-        return piece.type == type;
+        return piece.color == color;
     }
 }
