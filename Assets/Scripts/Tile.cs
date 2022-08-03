@@ -24,6 +24,9 @@ public class Tile : MonoBehaviour
     // Corner Tiles
     private Tile upperLeftTile, upperRightTile, lowerLeftTile, lowerRightTile;
 
+    //Raycast elements
+    Ray ray;
+    RaycastHit hit;
 
     // Neighbour valid tiles
     private List<Tile> neighbourTiles = new List<Tile>();
@@ -123,7 +126,17 @@ public class Tile : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        // Piece should follow the cursor        
+        if(selected == this)
+        {
+            int boardMask = 1 << 8;
+            ray = Camera.main.ScreenPointToRay(-Input.mousePosition);
+            if (Physics.Raycast(ray, out hit, 100f, boardMask))
+            {
+                Debug.Log("Drag");
+
+                transform.position = hit.point;
+            }
+        }
     }
 
     private async void OnMouseEnter()
@@ -184,7 +197,6 @@ public class Tile : MonoBehaviour
                 board.markedTiles.Add(lowerTile);
             }
         }
-
     }
 
     public bool HasHorizontalMatch()

@@ -53,20 +53,17 @@ public class Piece : MonoBehaviour
         }
     }
 
-    public void GoToTile(Tile target)
+    public Tween GoToTile(Tile target)
     {
         transform.SetParent(target.GetComponent<Transform>());
         target.piece = this;
+
+        return MoveToTile(target);
+
     }
 
     public Tween MoveToTile(Tile target)
     {
-        GoToTile(target);
-
-        transform.SetParent(target.transform);
-
-        target.piece = this;
-
         return transform.DOMove(target.transform.position, tweenDuration).SetAutoKill(true);
     }
 

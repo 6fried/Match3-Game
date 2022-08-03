@@ -63,6 +63,7 @@ public class BoardManager : MonoBehaviour
         }
 
         Camera.main.transform.position = new Vector3(width * step / 2, height * step / 2, Camera.main.transform.position.z);
+        CheckForMatchingTiles();
     }
 
     public async Task Swap(Tile tile1, Tile tile2)
@@ -86,7 +87,7 @@ public class BoardManager : MonoBehaviour
         await sequence.Play().AsyncWaitForCompletion();
 
         // Check if the move creates match
-        CheckForMatchingTiles();
+        SearchMatchingTiles();
 
         if (markedTiles.Count <= 0)
         {
@@ -110,7 +111,21 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public void CheckForMatchingTiles()
+    private void CheckForMatchingTiles()
+    {
+        SearchMatchingTiles();
+
+        if (markedTiles.Count > 0)
+        {
+            ClearMatchingTiles();
+        }
+        else if (!MatchingMoveIsPossible())
+        {
+            Shuffle();
+        }
+    }
+
+    public void SearchMatchingTiles()
     {
         for (int y = 0; y < height; y++) // Raws
         {
@@ -159,13 +174,13 @@ public class BoardManager : MonoBehaviour
                         if (cursTile.upperTile == null)
                         {
                             cursTile.CreatePiece(piecePrefabs[UnityEngine.Random.Range(0, piecePrefabs.Count)]);
-                            refillSequence.Join(cursTile.piece.MoveToTile(currentTile));
+                            refillSequence.Join(cursTile.piece.GoToTile(currentTile));
                             cursTile.piece = null;
                         }
                         else
                         {
                             cursTile = cursTile.upperTile;
-                            refillSequence.Join(cursTile.piece.MoveToTile(currentTile));
+                            refillSequence.Join(cursTile.piece.GoToTile(currentTile));
                             cursTile.piece = null;
                         }
                     }
@@ -179,21 +194,9 @@ public class BoardManager : MonoBehaviour
         await refillSequence.Play().AsyncWaitForCompletion();
 
         CheckForMatchingTiles();
-
-        if (markedTiles.Count > 0)
-        {
-            ClearMatchingTiles();
-        }
-        else if (!MatchIsPossible())
-        {
-            Debug.Log("Shuffle");
-            Shuffle();
-        }
-
-
     }
 
-    private bool MatchIsPossible()
+    private bool MatchingMoveIsPossible()
     {
         for (int y = 0; y < height; y++) // Raws
         {
@@ -210,7 +213,7 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    private void Shuffle() // TODO: Start Over
+    private async void Shuffle() // TODO: Start Over
     {
         System.Random rand = new System.Random();
 
@@ -230,16 +233,17 @@ public class BoardManager : MonoBehaviour
 
 
         List<Piece> shuffled = piecesOnBoard.OrderBy(_ => rand.Next()).ToList();
-        Debug.Log(piecesOnBoard);
-        Debug.Log(shuffled);
-        Sequence sequence = DOTween.Sequence();
+
+        Sequence shuffleSequence = DOTween.Sequence();
 
         for (int i = 0; i < shuffled.Count; i++)
         {
-            sequence.Join(shuffled[i].transform.DOScale(Vector2.zero, tweenDuration));
-            //Tile tile = tilesOnBoard[i];
-            //Piece piece = shuffled[i];
-            //piece.MoveToTile(tile);
+            shuffleSequence.Join(shuffled[i].GoToTile(tilesOnBoard[i]));
         }
+
+        await shuffleSequence.Play().AsyncWaitForCompletion();
+
+        CheckForMatchingTiles();
+
     }
 }
