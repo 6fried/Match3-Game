@@ -24,7 +24,8 @@ public class Tile : MonoBehaviour
     [Header("Tile Infos")]
     [Tooltip("Weither if the tile is marked to be clear or not")]
     public bool isMarked;
-
+    [Tooltip("Weither if the tile have already been checked or not")]
+    public bool isChecked;
     // Corner Tiles
     private Tile upperLeftTile, upperRightTile, lowerLeftTile, lowerRightTile;
 
@@ -34,6 +35,8 @@ public class Tile : MonoBehaviour
 
     // Neighbour valid tiles
     private List<Tile> neighbourTiles = new List<Tile>();
+    private List<Tile> row = new List<Tile>();
+    private List<Tile> column = new List<Tile>();
 
     // Weither if the tile is selected or not"
     private static Tile selected;
@@ -41,6 +44,8 @@ public class Tile : MonoBehaviour
     private void Start()
     {
         SaveNeighbourTiles();
+        SetRow();
+        SetColumn();
     }
 
     private void SaveNeighbourTiles()
@@ -100,6 +105,37 @@ public class Tile : MonoBehaviour
             lowerRightTile = GameObject.Find($"[{p.x + 1},{p.y - 1}]").GetComponent<Tile>();
         }
     }
+
+    public void SetRow()
+    {
+        BoardManager board = GameManager.instance.board;
+        float step = board.step;
+        Vector2 p = transform.position / step;
+
+        for (float x = 0; x < board.width; x++)
+        {
+            if (x != p.x)
+            {
+                row.Add(GameObject.Find($"[{x},{p.y}]").GetComponent<Tile>());
+            }
+        }
+    }
+
+    public void SetColumn()
+    {
+        BoardManager board = GameManager.instance.board;
+        float step = board.step;
+        Vector2 p = transform.position / step;
+
+        for (float y = 0; y < board.height; y++)
+        {
+            if (y != p.y)
+            {
+                row.Add(GameObject.Find($"[{p.x},{y}]").GetComponent<Tile>());
+            }
+        }
+    }
+
 
     /// <summary>
     /// Description:
@@ -162,80 +198,109 @@ public class Tile : MonoBehaviour
         selected = null;
     }
 
-    // TODO: Needs Improvement
-    public void GetMatchs()
+    public List<Tile> GetMatchs()
     {
-        BoardManager board = GameManager.instance.board;
-
         List<Tile> matchingTiles = new List<Tile>();
-        List<Tile> horizontalMatchingTiles = GetHorizontalMatch();
-        List<Tile> verticalMatchingTiles = GetVerticalMatch();
+        List<Tile> horizontalMatchingTiles = GetHorizontalMatchs();
+        List<Tile> verticalMatchingTiles = GetVerticalMatchs();
 
         if (horizontalMatchingTiles.Count >= 3)
         {
             matchingTiles.AddRange(horizontalMatchingTiles);
         }
 
-        if (horizontalMatchingTiles.Count >= 3)
+        if (verticalMatchingTiles.Count >= 3)
         {
+            if (matchingTiles.Contains(this))
+            {
+                verticalMatchingTiles.Remove(this);
+            }
             matchingTiles.AddRange(verticalMatchingTiles);
         }
 
-        board.markedTiles.Add(matchingTiles);
+        return matchingTiles;
     }
 
-    public List<Tile> GetHorizontalMatch()
+    public List<Tile> GetHorizontalMatchs()
     {
-        List<Tile> matchs = new List<Tile>();
+        List<Tile> matchs = new List<Tile> { this };
 
-        Tile cursTile = leftTile;
-        while (cursTile && cursTile.piece.IsEqualto(piece))
+        isChecked = true;
+
+        if (leftTile != null && !leftTile.isChecked && leftTile.piece.IsEqualto(piece))
         {
-            Debug.Log("rt");
-            cursTile.isMarked = true;
-            matchs.Add(cursTile);
-            cursTile = cursTile.leftTile;
+            matchs.AddRange(leftTile.GetHorizontalMatchs());
         }
 
-        cursTile = rightTile;
-        while (cursTile && cursTile.piece.IsEqualto(piece))
+        if (rightTile != null && !rightTile.isChecked && rightTile.piece.IsEqualto(piece))
         {
-            Debug.Log("et");
-            cursTile.isMarked = true;
-            matchs.Add(cursTile);
-            cursTile = cursTile.rightTile;
+            matchs.AddRange(rightTile.GetHorizontalMatchs());
         }
+
+        isChecked = false;
 
         return matchs;
     }
 
-    public List<Tile> GetVerticalMatch()
+    public List<Tile> GetVerticalMatchs()
     {
-        List<Tile> matchs = new List<Tile>();
+        List<Tile> matchs = new List<Tile> { this };
 
-        Tile cursTile = upperTile;
-        while (cursTile && cursTile.piece.IsEqualto(piece))
+        isChecked = true;
+
+        if(upperTile != null && !upperTile.isChecked && upperTile.piece.IsEqualto(piece))
         {
-            cursTile.isMarked = true;
-            matchs.Add(cursTile);
-            cursTile = cursTile.upperTile;
+            matchs.AddRange(upperTile.GetVerticalMatchs());
         }
 
-        cursTile = lowerTile;
-        while (cursTile && cursTile.piece.IsEqualto(piece))
+        if (lowerTile != null && !lowerTile.isChecked && lowerTile.piece.IsEqualto(piece))
         {
-            cursTile.isMarked = true;
-            matchs.Add(cursTile);
-            cursTile = cursTile.lowerTile;
+            matchs.AddRange(lowerTile.GetVerticalMatchs());
         }
+
+        isChecked = false;
 
         return matchs;
     }
-
     public void Explode()
     {
+        switch (piece.type)
+        {
+            case PieceType.NORMAL:
+                break;
 
-        //DOTween.Sequence().Join(piece.transform.DOScale(Vector3.zero, .25f).SetAutoKill(true)).Play();
+            case PieceType.H_BONUS:
+                foreach (Tile t in row)
+                {
+                    if (t.piece != null)
+                    {
+                        if (t.isMarked)
+                        {
+                            t.isMarked = false;
+                        }
+                        t.Explode();
+                    }
+                }
+                break;
+
+            case PieceType.V_BONUS:
+                foreach (Tile t in column)
+                {
+                    if (t.piece != null)
+                    {
+                        if (t.isMarked)
+                        {
+                            t.isMarked = false;
+                        }
+                        t.Explode();
+                    }
+                }
+                break;
+
+            default:
+                break;
+        }
+
         Destroy(piece.gameObject);
         piece = null;
     }

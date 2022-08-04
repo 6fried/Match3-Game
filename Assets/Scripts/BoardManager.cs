@@ -62,7 +62,18 @@ public class BoardManager : MonoBehaviour
             }
         }
 
-        Camera.main.transform.position = new Vector3(width * step / 2, height * step / 2, Camera.main.transform.position.z);
+        for (int y = 0; y < height; y++) // Raws
+        {
+            for (int x = 0; x < width; x++) // Columns
+            {
+                Tile currentTile = GameObject.Find($"[{x},{y}]").GetComponent<Tile>();
+                currentTile.SetRow();
+                currentTile.SetColumn();
+            }
+        }
+
+        Camera.main.transform.position = new Vector3((width-1) * step / 2, (height-1) * step / 2, Camera.main.transform.position.z);
+        Camera.main.orthographicSize = width + 2;
         CheckForMatchingTiles();
     }
 
@@ -132,9 +143,15 @@ public class BoardManager : MonoBehaviour
             for (int x = 0; x < width; x++) // Columns
             {
                 Tile currentTile = GameObject.Find($"[{x},{y}]").GetComponent<Tile>();
-                if (!currentTile.isMarked)
+
+                List<Tile> currentTileMatchs = currentTile.GetMatchs();
+                if (!currentTile.isMarked && currentTileMatchs.Count >= 3)
                 {
-                    currentTile.GetMatchs();
+                    foreach (Tile t in currentTileMatchs)
+                    {
+                        t.isMarked = true;
+                    }
+                    markedTiles.Add(currentTileMatchs);
                 }
             }
         }
@@ -146,9 +163,18 @@ public class BoardManager : MonoBehaviour
         {
             foreach (List<Tile> tiles in markedTiles)
             {
-                foreach(Tile tile in tiles)
+                if (tiles.Count > 3)
                 {
-                    tile.Explode();
+                    tiles[0].piece.SetType(PieceType.H_BONUS);
+                    tiles[0].isMarked = false;
+                }
+                foreach (Tile tile in tiles)
+                {
+                    if (tile.isMarked)
+                    {
+                        tile.Explode();
+                        tile.isMarked = false;
+                    }
                 }
             }
 
