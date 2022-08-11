@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using DG.Tweening;
 
 public class Tile : MonoBehaviour
 {
+    #region Variables
+
+    #region Public
+
     [Header("Tile Settings")]
 
     [Header("Tile Neighbours")]
@@ -26,6 +29,13 @@ public class Tile : MonoBehaviour
     public bool isMarked;
     [Tooltip("Weither if the tile have already been checked or not")]
     public bool isChecked;
+    [Tooltip("Weither if the tile is exploding or not")]
+    public bool isExploding;
+
+    #endregion // Public
+
+    #region Private
+
     // Corner Tiles
     private Tile upperLeftTile, upperRightTile, lowerLeftTile, lowerRightTile;
 
@@ -34,13 +44,27 @@ public class Tile : MonoBehaviour
     RaycastHit hit;
 
     // Neighbour valid tiles
-    private List<Tile> neighbourTiles = new List<Tile>();
-    private List<Tile> row = new List<Tile>();
-    private List<Tile> column = new List<Tile>();
+    private readonly List<Tile> neighbourTiles = new List<Tile>();
+    private readonly List<Tile> row = new List<Tile>();
+    private readonly List<Tile> column = new List<Tile>();
 
     // Weither if the tile is selected or not"
     private static Tile selected;
 
+    #endregion // Private
+
+    #endregion // Vabiables
+
+    #region Functions
+
+    /// <summary>
+    /// Description:
+    /// Standard Unity called Once before the first frame update
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     private void Start()
     {
         SaveNeighbourTiles();
@@ -48,6 +72,14 @@ public class Tile : MonoBehaviour
         SetColumn();
     }
 
+    /// <summary>
+    /// Description:
+    /// Saves all neighbour tiles
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     private void SaveNeighbourTiles()
     {
         float step = GameManager.instance.board.step;
@@ -106,6 +138,14 @@ public class Tile : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Saves all tiles on the same row
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     public void SetRow()
     {
         BoardManager board = GameManager.instance.board;
@@ -121,6 +161,14 @@ public class Tile : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Saves all tiles on the same column
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     public void SetColumn()
     {
         BoardManager board = GameManager.instance.board;
@@ -131,11 +179,10 @@ public class Tile : MonoBehaviour
         {
             if (y != p.y)
             {
-                row.Add(GameObject.Find($"[{p.x},{y}]").GetComponent<Tile>());
+                column.Add(GameObject.Find($"[{p.x},{y}]").GetComponent<Tile>());
             }
         }
     }
-
 
     /// <summary>
     /// Description:
@@ -159,11 +206,27 @@ public class Tile : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Standard Unity Function called when the user has pressed the mouse button while over the GUIElement or Collider
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     private void OnMouseDown()
     {
         selected = this;
     }
 
+    /// <summary>
+    /// Description:
+    /// Standard Unity Function called when the user has clicked on a GUIElement or Collider and is still holding down the mouse
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     private void OnMouseDrag()
     {
         if(selected == this)
@@ -179,6 +242,14 @@ public class Tile : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Standard Unity Function called when the mouse entered the GUIElement or the Collider
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     private async void OnMouseEnter()
     {
         if(selected != null && selected != this && neighbourTiles.Contains(selected))
@@ -188,16 +259,42 @@ public class Tile : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Standard Unity Function called when the user has released the mouse button
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     private void OnMouseUp()
     {
         selected = null;
     }
+
+    /// <summary>
+    /// Description
+    /// Sets the Selected tile to null after one frame
+    /// Input: none
+    /// Return:
+    /// IEnumerator
+    /// </summary>
+    /// <returns>Allows this to function like a coroutine</returns>
     private IEnumerator ResetSelection()
     {
         yield return new WaitForEndOfFrame();
         selected = null;
     }
 
+    /// <summary>
+    /// Description:
+    /// Returns all tiles that matches with this
+    /// Input: 
+    /// none
+    /// Return:
+    /// List<Tile>
+    /// </summary>
+    /// <returns>All matching tiles</returns>
     public List<Tile> GetMatchs()
     {
         List<Tile> matchingTiles = new List<Tile>();
@@ -221,6 +318,15 @@ public class Tile : MonoBehaviour
         return matchingTiles;
     }
 
+    /// <summary>
+    /// Description:
+    /// Returns all tiles that horizontally matches with this
+    /// Input: 
+    /// none
+    /// Return:
+    /// List<Tile>
+    /// </summary>
+    /// <returns>All Horizontal matching tiles</returns>
     public List<Tile> GetHorizontalMatchs()
     {
         List<Tile> matchs = new List<Tile> { this };
@@ -242,6 +348,15 @@ public class Tile : MonoBehaviour
         return matchs;
     }
 
+    /// <summary>
+    /// Description:
+    /// Returns all tiles that vertically matches with this
+    /// Input: 
+    /// none
+    /// Return:
+    /// List<Tile>
+    /// </summary>
+    /// <returns>All Vertical matching tiles</returns>
     public List<Tile> GetVerticalMatchs()
     {
         List<Tile> matchs = new List<Tile> { this };
@@ -262,8 +377,18 @@ public class Tile : MonoBehaviour
 
         return matchs;
     }
+
+    /// <summary>
+    /// Description:
+    /// Destroy the piece on the tile
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     public void Explode()
     {
+        isExploding = true;
         switch (piece.type)
         {
             case PieceType.NORMAL:
@@ -272,7 +397,7 @@ public class Tile : MonoBehaviour
             case PieceType.H_BONUS:
                 foreach (Tile t in row)
                 {
-                    if (t.piece != null)
+                    if (!t.isExploding && t.piece != null)
                     {
                         if (t.isMarked)
                         {
@@ -286,7 +411,7 @@ public class Tile : MonoBehaviour
             case PieceType.V_BONUS:
                 foreach (Tile t in column)
                 {
-                    if (t.piece != null)
+                    if (!t.isExploding && t.piece != null)
                     {
                         if (t.isMarked)
                         {
@@ -300,29 +425,22 @@ public class Tile : MonoBehaviour
             default:
                 break;
         }
-
-        Destroy(piece.gameObject);
-        piece = null;
+        if (piece != null) {
+            Destroy(piece.gameObject);
+            piece = null;
+        }
+        isExploding = false;
     }
 
-    public bool HasMatchFor(Piece cmpPiece)
-    {
-        bool hasHorizontalMatch = false;
-        bool hasVerticalMatch = false;
-
-        if (leftTile != null && rightTile != null)
-        {
-            hasHorizontalMatch = leftTile.piece.IsEqualto(cmpPiece) && rightTile.piece.IsEqualto(cmpPiece);
-        }
-
-        if (upperTile != null && lowerTile != null)
-        {
-            hasVerticalMatch = upperTile.piece.IsEqualto(cmpPiece) && lowerTile.piece.IsEqualto(cmpPiece);
-        }
-
-        return (hasHorizontalMatch || hasVerticalMatch);
-    }
-
+    /// <summary>
+    /// Description:
+    /// Checks if this tile can have vertical match
+    /// Input:
+    /// none
+    /// Return:
+    /// bool
+    /// </summary>
+    /// <returns> True if it can have match, else unless</returns>
     public bool MayHaveVerticalMatch()
     {
         bool a = false, b = false, c = false, d = false, e = false, f = false, g = false, h = false, i = false, j = false;
@@ -381,6 +499,15 @@ public class Tile : MonoBehaviour
         return a || b || c || d || e || f || g || h || i || j;
     }
 
+    /// <summary>
+    /// Description:
+    /// Checks if this tile can have horizontal match
+    /// Input:
+    /// none
+    /// Return:
+    /// bool
+    /// </summary>
+    /// <returns> True if it can have match, else unless</returns>
     public bool MayHaveHorizontalMatch()
     {
         bool a = false, b = false, c = false, d = false, e = false, f = false, g = false, h = false, i = false, j = false;
@@ -435,4 +562,5 @@ public class Tile : MonoBehaviour
         return a || b || c || d || e || f || g || h || i || j;
     }
 
+    #endregion // Functions
 }

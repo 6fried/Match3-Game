@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,6 +6,7 @@ using DG.Tweening;
 
 public class BoardManager : MonoBehaviour
 {
+    #region Variables
     [Header("Board Settings")]
     [Tooltip("The prefab used for Tiles")]
     public GameObject tilePrefab;
@@ -24,10 +24,15 @@ public class BoardManager : MonoBehaviour
     public float step = 1.2f;
 
     [HideInInspector]
+    // Pieces that are marked to be deleted
     public List<List<Tile>> markedTiles = new List<List<Tile>>();
 
     // the duration of each tween
     private float tweenDuration = .25f;
+
+    #endregion // Variables
+
+    #region Functions
 
     /// <summary>
     /// Description:
@@ -77,6 +82,17 @@ public class BoardManager : MonoBehaviour
         CheckForMatchingTiles();
     }
 
+    /// <summary>
+    /// Description:
+    /// Move each piece to the other's tile
+    /// Input:
+    /// Tile tile1, Tile tile2
+    /// Return:
+    /// Async Task
+    /// </summary>
+    /// <param name="tile1">The first tile that will be swapped</param>
+    /// <param name="tile2">The second tile that will be swapped</param>
+    /// <returns></returns>
     public async Task Swap(Tile tile1, Tile tile2)
     {
         Piece tile1Piece = tile1.piece;
@@ -122,6 +138,14 @@ public class BoardManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Checks if there are matching tiles on the board
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     private void CheckForMatchingTiles()
     {
         SearchMatchingTiles();
@@ -136,6 +160,14 @@ public class BoardManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Searches on each tile for matches
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     public void SearchMatchingTiles()
     {
         for (int y = 0; y < height; y++) // Raws
@@ -157,6 +189,14 @@ public class BoardManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Makes all matching tiles explode
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
     public void ClearMatchingTiles()
     {
         if (markedTiles.Count > 0)
@@ -183,6 +223,14 @@ public class BoardManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Description:
+    /// Apply "gravity" to all tile in order to fill gaps left by exploded tiles
+    /// Input:
+    /// none
+    /// Return:
+    /// void (non return)
+    /// </summary>
     private async void RefillBoard()
     {
         Sequence refillSequence = DOTween.Sequence();
@@ -228,6 +276,15 @@ public class BoardManager : MonoBehaviour
         CheckForMatchingTiles();
     }
 
+    /// <summary>
+    /// Description:
+    /// Check if there are any matching move available to be proceed. Unless, the board is shuffled
+    /// Input:
+    /// none
+    /// Return
+    /// bool (true if there is matching move possible, else unless)
+    /// </summary>
+    /// <returns>Weither if there is matching move possible or not</returns>
     private bool MatchingMoveIsPossible()
     {
         for (int y = 0; y < height; y++) // Raws
@@ -245,7 +302,15 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    private async void Shuffle() // TODO: Start Over
+    /// <summary>
+    /// Description:
+    /// It shuffles the board until there is any matching move possible
+    /// Input:
+    /// none
+    /// Return:
+    /// void (no return)
+    /// </summary>
+    private async void Shuffle()
     {
         System.Random rand = new System.Random();
 
@@ -278,4 +343,6 @@ public class BoardManager : MonoBehaviour
         CheckForMatchingTiles();
 
     }
+
+    #endregion // Functions
 }

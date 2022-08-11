@@ -1,15 +1,19 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    #region Vaviables
+
     [Header("Game Settings")]
     [Tooltip("The Game Manager of the actual sequence")]
     public static GameManager instance;
 
     [Tooltip("The main Board of the game.")]
     public BoardManager board;
+
+    #endregion
+
+    #region Functions
 
     /// <summary>
     /// Description:
@@ -56,4 +60,6 @@ public class GameManager : MonoBehaviour
     {
         board.InitGame();
     }
+
+    #endregion // Functions
 }
